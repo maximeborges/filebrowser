@@ -131,10 +131,17 @@ type Integrations struct {
 // onlyoffice secret is stored in the local.json file
 // docker exec <containerID> /var/www/onlyoffice/documentserver/npm/json -f /etc/onlyoffice/documentserver/local.json 'services.CoAuthoring.secret.session.string'
 type OnlyOffice struct {
-	Url         string `json:"url" validate:"required"`    // The URL to the OnlyOffice Document Server, needs to be accessible to the user.
-	InternalUrl string `json:"internalUrl"`                // An optional internal address that the filebrowser server can use to communicate with the OnlyOffice Document Server, could be useful to bypass proxy.
-	Secret      string `json:"secret" validate:"required"` // secret: authentication key for OnlyOffice integration
-	ViewOnly    bool   `json:"viewOnly"`                   // view only mode for OnlyOffice
+	Url         string            `json:"url" validate:"required"`    // The URL to the OnlyOffice Document Server, needs to be accessible to the user.
+	InternalUrl string            `json:"internalUrl"`                // An optional internal address that the filebrowser server can use to communicate with the OnlyOffice Document Server, could be useful to bypass proxy.
+	Secret      string            `json:"secret" validate:"required"` // secret: authentication key for OnlyOffice integration
+	ViewOnly    bool              `json:"viewOnly"`                   // view only mode for OnlyOffice
+	History     OnlyOfficeHistory `json:"history"`                    // document version history shown in the OnlyOffice editor
+}
+
+type OnlyOfficeHistory struct {
+	Enabled     bool   `json:"enabled"`     // keep the previous version of a document each time OnlyOffice saves it, and show the versions in the editor's version history
+	Path        string `json:"path"`        // directory where document versions are stored (default: "office-history" next to the database file)
+	MaxVersions int    `json:"maxVersions"` // number of previous versions kept per document, oldest removed first (0 keeps all)
 }
 
 type Media struct {

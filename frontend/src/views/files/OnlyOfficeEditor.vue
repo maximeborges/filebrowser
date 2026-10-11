@@ -1,7 +1,10 @@
 <template>
   <!-- Conditionally render the DocumentEditor component -->
   <DocumentEditor v-if="ready" id="docEditor" :documentServerUrl="globalVars.onlyOfficeUrl" :config="clientConfig"
-    :onLoadComponentError="onLoadComponentError" />
+    :onLoadComponentError="onLoadComponentError"
+    :events_onRequestHistory="historyEnabled ? onRequestHistory : undefined"
+    :events_onRequestHistoryData="historyEnabled ? onRequestHistoryData : undefined"
+    :events_onRequestHistoryClose="historyEnabled ? onRequestHistoryClose : undefined" />
   <div v-else>
     <p>{{ $t("general.loading", { suffix: "..." }) }}</p>
   </div>
@@ -55,6 +58,10 @@ export default {
     },
     globalVars() {
       return globalVars;
+    },
+    // Version history is served for signed-in users only, not on shares.
+    historyEnabled() {
+      return Boolean(globalVars.onlyOfficeHistory) && !state.req.hash;
     },
   },
   async mounted() {
@@ -120,6 +127,34 @@ export default {
 
     onLoadComponentError(errorInfo) {
       console.error("OnlyOffice component load error:", errorInfo);
+    },
+
+    docEditor() {
+      return window.DocEditor?.instances?.docEditor;
+    },
+
+    async onRequestHistory() {
+      try {
+        const history = await officeApi.getHistory(state.req);
+        this.docEditor()?.refreshHistory(history);
+      } catch (error) {
+        this.docEditor()?.refreshHistory({ error: error.message || String(error) });
+      }
+    },
+
+    async onRequestHistoryData(event) {
+      const version = event.data;
+      try {
+        const data = await officeApi.getHistoryData(state.req, version);
+        this.docEditor()?.setHistoryData(data);
+      } catch (error) {
+        this.docEditor()?.setHistoryData({ error: error.message || String(error), version });
+      }
+    },
+
+    // Leaving the history view: reopen the current version of the document.
+    onRequestHistoryClose() {
+      window.location.reload();
     },
   },
 };

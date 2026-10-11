@@ -2021,6 +2021,215 @@ const docTemplate = `{
                 ]
             }
         },
+        "/api/office/history": {
+            "get": {
+                "description": "Returns the versions of a document for the OnlyOffice editor's refreshHistory method. Requires integrations.office.history.enabled.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Office"
+                ],
+                "summary": "Get OnlyOffice document history",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Source name",
+                        "name": "source",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "File path",
+                        "name": "path",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "currentVersion and history list",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Missing or invalid parameters",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "History disabled or document not found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "No open editor session for the document",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/office/history/data": {
+            "get": {
+                "description": "Returns the setHistoryData payload for one version: its file URL and, when stored, the previous version and the change set between them. Signed with the OnlyOffice secret.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Office"
+                ],
+                "summary": "Get OnlyOffice document version data",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Source name",
+                        "name": "source",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "File path",
+                        "name": "path",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Version number",
+                        "name": "version",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "setHistoryData payload",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Missing or invalid parameters",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "History disabled, document or version not found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/office/history/file": {
+            "get": {
+                "description": "Serves the content of a document version (file) or the change set from that version to the next one (changes). Used by the OnlyOffice document server.",
+                "produces": [
+                    "application/octet-stream"
+                ],
+                "tags": [
+                    "Office"
+                ],
+                "summary": "Download an OnlyOffice document version",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Source name",
+                        "name": "source",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "File path",
+                        "name": "path",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Version number",
+                        "name": "version",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "file or changes",
+                        "name": "file",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Version content",
+                        "schema": {
+                            "type": "file"
+                        }
+                    },
+                    "400": {
+                        "description": "Missing or invalid parameters",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "History disabled, document or version not found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        },
         "/api/resources": {
             "get": {
                 "description": "Returns metadata and optionally file contents for a specified resource path.",
@@ -6332,6 +6541,14 @@ const docTemplate = `{
                 "url"
             ],
             "properties": {
+                "history": {
+                    "description": "document version history shown in the OnlyOffice editor",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/settings.OnlyOfficeHistory"
+                        }
+                    ]
+                },
                 "internalUrl": {
                     "description": "An optional internal address that the filebrowser server can use to communicate with the OnlyOffice Document Server, could be useful to bypass proxy.",
                     "type": "string"
@@ -6347,6 +6564,23 @@ const docTemplate = `{
                 "viewOnly": {
                     "description": "view only mode for OnlyOffice",
                     "type": "boolean"
+                }
+            }
+        },
+        "settings.OnlyOfficeHistory": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "description": "keep the previous version of a document each time OnlyOffice saves it, and show the versions in the editor's version history",
+                    "type": "boolean"
+                },
+                "maxVersions": {
+                    "description": "number of previous versions kept per document, oldest removed first (0 keeps all)",
+                    "type": "integer"
+                },
+                "path": {
+                    "description": "directory where document versions are stored (default: \"office-history\" next to the database file)",
+                    "type": "string"
                 }
             }
         },

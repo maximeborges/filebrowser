@@ -55,3 +55,15 @@ export async function callback(params, hash) {
     throw err
   }
 }
+
+// GET /api/office/history: versions for the editor's refreshHistory
+export async function getHistory(req) {
+  const res = await fetchURL(getApiPath('office/history', { path: req.path, source: req.source }))
+  return await res.json()
+}
+
+// GET /api/office/history/data: one version for the editor's setHistoryData
+export async function getHistoryData(req, version) {
+  const res = await fetchURL(getApiPath('office/history/data', { path: req.path, source: req.source, version }))
+  return await res.json()
+}

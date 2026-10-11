@@ -550,6 +550,15 @@ func processOnlyOfficeCallback(w http.ResponseWriter, r *http.Request, d *Contex
 		// has been saved successfully below, otherwise a failed save could
 		// not be retried by the document server.
 		if data.Status == onlyOfficeStatusDocumentClosedWithNoChanges {
+			// A session whose edits were all force saved ends here rather than
+			// with status 2: store its starting content as a version.
+			if officeHistoryEnabled() {
+				if fi, err := files.FileInfoFaster(utils.FileOptions{Source: source, Path: path}, user); err == nil {
+					unlock := lockOnlyOfficeDoc(source + "|" + path)
+					recordOfficeSessionEnd(fi.RealPath, data, user)
+					unlock()
+				}
+			}
 			deleteOfficeId(source, path, user)
 		}
 
@@ -688,7 +697,7 @@ func processOnlyOfficeCallback(w http.ResponseWriter, r *http.Request, d *Contex
 
 		// CRITICAL: Validate that the original file still exists before saving
 		// This prevents creating duplicate files if the original was renamed/moved
-		_, err = files.FileInfoFaster(utils.FileOptions{
+		originalInfo, err := files.FileInfoFaster(utils.FileOptions{
 			Source: source,
 			Path:   path,
 		}, user)
@@ -711,6 +720,9 @@ func processOnlyOfficeCallback(w http.ResponseWriter, r *http.Request, d *Contex
 			return returnOnlyOfficeError(w, r, 403, "user scope not found")
 		}
 		fullIndexPath := utils.JoinPathAsUnix(userScope, path)
+
+		// Keep the content the session started from before overwriting it.
+		recordOfficeSessionStart(originalInfo.RealPath, data)
 
 		writeErr := files.WriteFile(source, fullIndexPath, doc.Body)
 		if writeErr != nil {
@@ -736,6 +748,7 @@ func processOnlyOfficeCallback(w http.ResponseWriter, r *http.Request, d *Contex
 		// The document was saved, so a "closed with changes" session is
 		// complete: retire the document key so it cannot be reused.
 		if data.Status == onlyOfficeStatusDocumentClosedWithChanges {
+			recordOfficeSessionEnd(originalInfo.RealPath, data, user)
 			deleteOfficeId(source, path, user)
 		}
 	}

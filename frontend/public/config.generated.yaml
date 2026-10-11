@@ -276,6 +276,10 @@ integrations:
     internalUrl: ""                       # An optional internal address that the filebrowser server can use to communicate with the OnlyOffice Document Server, could be useful to bypass proxy.
     secret: ""                            # secret: authentication key for OnlyOffice integration  validate:required
     viewOnly: false                       # view only mode for OnlyOffice
+    history:                              # document version history shown in the OnlyOffice editor
+      enabled: false                      # keep the previous version of a document each time OnlyOffice saves it, and show the versions in the editor's version history
+      path: ""                            # directory where document versions are stored (default: "office-history" next to the database file)
+      maxVersions: 0                      # number of previous versions kept per document, oldest removed first (0 keeps all)
   media:                                  #  validate:omitempty
     ffmpegPath: ""                        # path to ffmpeg directory with ffmpeg and ffprobe (eg. /usr/local/bin)
     convert:                              # config for ffmpeg conversion settings

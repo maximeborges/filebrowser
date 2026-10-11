@@ -723,6 +723,10 @@ definitions:
     type: object
   settings.OnlyOffice:
     properties:
+      history:
+        allOf:
+        - $ref: '#/definitions/settings.OnlyOfficeHistory'
+        description: document version history shown in the OnlyOffice editor
       internalUrl:
         description: An optional internal address that the filebrowser server can
           use to communicate with the OnlyOffice Document Server, could be useful
@@ -741,6 +745,21 @@ definitions:
     required:
     - secret
     - url
+    type: object
+  settings.OnlyOfficeHistory:
+    properties:
+      enabled:
+        description: keep the previous version of a document each time OnlyOffice
+          saves it, and show the versions in the editor's version history
+        type: boolean
+      maxVersions:
+        description: number of previous versions kept per document, oldest removed
+          first (0 keeps all)
+        type: integer
+      path:
+        description: 'directory where document versions are stored (default: "office-history"
+          next to the database file)'
+        type: string
     type: object
   settings.PasskeyAuthConfig:
     properties:
@@ -3916,6 +3935,148 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Get OnlyOffice client configuration
+      tags:
+      - Office
+  /api/office/history:
+    get:
+      description: Returns the versions of a document for the OnlyOffice editor's
+        refreshHistory method. Requires integrations.office.history.enabled.
+      parameters:
+      - description: Source name
+        in: query
+        name: source
+        required: true
+        type: string
+      - description: File path
+        in: query
+        name: path
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: currentVersion and history list
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Missing or invalid parameters
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: History disabled or document not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: No open editor session for the document
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Get OnlyOffice document history
+      tags:
+      - Office
+  /api/office/history/data:
+    get:
+      description: 'Returns the setHistoryData payload for one version: its file URL
+        and, when stored, the previous version and the change set between them. Signed
+        with the OnlyOffice secret.'
+      parameters:
+      - description: Source name
+        in: query
+        name: source
+        required: true
+        type: string
+      - description: File path
+        in: query
+        name: path
+        required: true
+        type: string
+      - description: Version number
+        in: query
+        name: version
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: setHistoryData payload
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Missing or invalid parameters
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: History disabled, document or version not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Get OnlyOffice document version data
+      tags:
+      - Office
+  /api/office/history/file:
+    get:
+      description: Serves the content of a document version (file) or the change set
+        from that version to the next one (changes). Used by the OnlyOffice document
+        server.
+      parameters:
+      - description: Source name
+        in: query
+        name: source
+        required: true
+        type: string
+      - description: File path
+        in: query
+        name: path
+        required: true
+        type: string
+      - description: Version number
+        in: query
+        name: version
+        required: true
+        type: integer
+      - description: file or changes
+        in: query
+        name: file
+        required: true
+        type: string
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: Version content
+          schema:
+            type: file
+        "400":
+          description: Missing or invalid parameters
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: History disabled, document or version not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Download an OnlyOffice document version
       tags:
       - Office
   /api/resources:
